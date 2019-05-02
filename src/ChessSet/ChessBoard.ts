@@ -1,22 +1,15 @@
 import Array2D from './Array2D'
-import { ChessPiece } from './ChessPiece'
-import deltas from './PieceDeltas'
+import { ChessPiece, CreateChessPiece } from './ChessPiece'
+export interface ChessBoard {
+  outOfBounds(cursor): boolean
+  emptyAt(cursor): boolean
+  friendAt(cursor): boolean
+  enemyAt(cursor): boolean
+  isWhite(cursor): boolean
+}
 
-export class ChessBoard extends Array2D<ChessPiece> {
+export class Board extends Array2D<ChessPiece> implements ChessBoard {
   whiteToMove = true
-
-  /*
-    Lookup table for piece types
-  */
-  pieceFunctions = {
-    B: this.fn,
-    R: this.fn,
-    Q: this.fn,
-    K: this.gn,
-    N: this.gn,
-    PW: this.pn,
-    PB: this.pn,
-  }
 
   constructor() {
     super(8, 8)
@@ -27,48 +20,48 @@ export class ChessBoard extends Array2D<ChessPiece> {
   */
   setUpDefaultBoard() {
     this.grid[0] = [
-      new ChessPiece('R', false),
-      new ChessPiece('N', false),
-      new ChessPiece('B', false),
-      new ChessPiece('Q', false),
+      CreateChessPiece('R', false),
+      CreateChessPiece('N', false),
+      CreateChessPiece('B', false),
+      CreateChessPiece('Q', false),
 
-      new ChessPiece('K', false),
-      new ChessPiece('B', false),
-      new ChessPiece('N', false),
-      new ChessPiece('R', false),
+      CreateChessPiece('K', false),
+      CreateChessPiece('B', false),
+      CreateChessPiece('N', false),
+      CreateChessPiece('R', false),
     ]
     this.grid[1] = [
-      new ChessPiece('PB', false),
-      new ChessPiece('PB', false),
-      new ChessPiece('PB', false),
-      new ChessPiece('PB', false),
+      CreateChessPiece('PB', false),
+      CreateChessPiece('PB', false),
+      CreateChessPiece('PB', false),
+      CreateChessPiece('PB', false),
 
-      new ChessPiece('PB', false),
-      new ChessPiece('PB', false),
-      new ChessPiece('PB', false),
-      new ChessPiece('PB', false),
+      CreateChessPiece('PB', false),
+      CreateChessPiece('PB', false),
+      CreateChessPiece('PB', false),
+      CreateChessPiece('PB', false),
     ]
     this.grid[6] = [
-      new ChessPiece('PW', true),
-      new ChessPiece('PW', true),
-      new ChessPiece('PW', true),
-      new ChessPiece('PW', true),
+      CreateChessPiece('PW', true),
+      CreateChessPiece('PW', true),
+      CreateChessPiece('PW', true),
+      CreateChessPiece('PW', true),
 
-      new ChessPiece('PW', true),
-      new ChessPiece('PW', true),
-      new ChessPiece('PW', true),
-      new ChessPiece('PW', true),
+      CreateChessPiece('PW', true),
+      CreateChessPiece('PW', true),
+      CreateChessPiece('PW', true),
+      CreateChessPiece('PW', true),
     ]
     this.grid[7] = [
-      new ChessPiece('R', true),
-      new ChessPiece('N', true),
-      new ChessPiece('B', true),
-      new ChessPiece('Q', true),
+      CreateChessPiece('R', true),
+      CreateChessPiece('N', true),
+      CreateChessPiece('B', true),
+      CreateChessPiece('Q', true),
 
-      new ChessPiece('K', true),
-      new ChessPiece('B', true),
-      new ChessPiece('N', true),
-      new ChessPiece('R', true),
+      CreateChessPiece('K', true),
+      CreateChessPiece('B', true),
+      CreateChessPiece('N', true),
+      CreateChessPiece('R', true),
     ]
   }
 
@@ -111,12 +104,9 @@ export class ChessBoard extends Array2D<ChessPiece> {
     }
   }
 
-  /*
-    Helper function
-    Perform componentwise addition on an 1-D array of length 2
-  */
-  addArrays(A, B) {
-    return [A[0] + B[0], A[1] + B[1]]
+  isWhite(cursor) {
+    const c = this.getAt(cursor)
+    return c && c.isWhite()
   }
 
   /*
@@ -145,140 +135,16 @@ export class ChessBoard extends Array2D<ChessPiece> {
   }
 
   /*
-    Supply a transformation tx to convert the board
-    into a transformed board where each piece p is transformed to tx(p).
-    tx should have signature tx(ii, kk, element), where
-    ii - row, kk - column, and element - the element at (ii,kk)
-  */
-  transformBoard(tx) {
-    const arr = new Array2D(8, 8)
-    this.each(function(ii, kk, el) {
-      arr.set(ii, kk, tx(el))
-    })
-
-    return arr
-  }
-
-  /*
     The following functions generate a list
     of possible moves for 2 different types of pieces
   */
 
   generateMoveList(c) {
     const p: ChessPiece = this.getAt(c)
+
     if (p == null) {
       return null
     }
-    const m = []
-    const f = this.pieceFunctions[p.type].bind(this)
-    const D = deltas[p.type]
-    const self = this
-    D.forEach(
-      function(d) {
-        f(m, self.addArrays(c, d), d)
-      }.bind(this)
-    )
-
-    this.generateSpecialMoves(m, c)
-
-    return m
-  }
-
-  /*
-    Moves like the bishop, queen, and rook
-    need a sort of ray-tracing to generate moves,
-    so that they don't move through other pieces
-  */
-  fn(list, cursor, delta) {
-    if (this.outOfBounds(cursor)) return
-    if (!this.emptyAt(cursor)) {
-      this.gn(list, cursor, delta)
-
-      return
-    } else {
-      list.push(cursor)
-      this.fn(list, this.addArrays(cursor, delta), delta)
-    }
-  }
-
-  /*
-    Other pieces simply need to check if the destination
-    is occupied
-  */
-  gn(list, cursor, delta) {
-    if (this.outOfBounds(cursor)) return
-    if ((this.emptyAt(cursor) || this.enemyAt(cursor)) && !this.friendAt(cursor)) {
-      list.push(cursor)
-    }
-  }
-
-  /*
-    Pawns are not allowed to move into enemies,
-    and can move 2 moves as their first move
-    and can move into enemies on their forward diagonals
-  */
-  pn(list, cursor, delta) {
-    if (this.outOfBounds(cursor)) return
-    if (this.emptyAt(cursor) && !this.enemyAt(cursor)) {
-      list.push(cursor)
-    }
-  }
-
-  /*
-    Only allow the move if it is into an enemy
-  */
-  pnX(list, cursor, delta) {
-    if (this.enemyAt(cursor)) {
-      list.push(cursor)
-    }
-  }
-
-  /*
-    Check if the pawn can move two spaces and add it to the list if available
-  */
-  pawnExtraMove(list, P, src) {
-    if (P.isWhite()) {
-      if (src[0] === 6) {
-        this.pn(list, this.addArrays(src, deltas.PW_first[0]), deltas.PW_first[0])
-      }
-    } else {
-      if (src[0] === 1) {
-        this.pn(list, this.addArrays(src, deltas.PB_first[0]), deltas.PB_first[0])
-      }
-    }
-  }
-
-  /*
-    Check if the pawn may attack diagonally and add it to the list if available
-  */
-  pawnDiagonalAttack(list, P, src) {
-    const self = this
-    if (P.isWhite()) {
-      deltas.PW_diag.forEach(
-        function(d) {
-          self.pnX(list, self.addArrays(src, d), d)
-        }.bind(this)
-      )
-    } else {
-      deltas.PB_diag.forEach(
-        function(d) {
-          self.pnX(list, self.addArrays(src, d), d)
-        }.bind(this)
-      )
-    }
-  }
-
-  /*
-    Generate moves like extra pawn move forward, castling, en passant, and
-    pawn upgrade
-  */
-  generateSpecialMoves(list, src) {
-    const P = this.getAt(src)
-    if (P.type[0] === 'P') {
-      this.pawnExtraMove(list, P, src)
-      this.pawnDiagonalAttack(list, P, src)
-    }
+    return p.generateMoves(c, this)
   }
 }
-
-// whitespace guard

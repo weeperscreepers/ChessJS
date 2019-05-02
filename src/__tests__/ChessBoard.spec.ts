@@ -1,5 +1,5 @@
-import { ChessBoard } from '../ChessSet/ChessBoard'
-import { ChessPiece } from '../ChessSet/ChessPiece'
+import { Board } from '../ChessSet/ChessBoard'
+import { CreateChessPiece } from '../ChessSet/ChessPiece'
 
 function rng(min, max?) {
   if (max == null) {
@@ -9,10 +9,15 @@ function rng(min, max?) {
 
   return Math.floor(Math.random() * (max - min) + min)
 }
+
+const sortArray = a => a.sort((x, y) => 8 * (x[0] - y[0]) + (x[1] - y[1]))
+
 /*
   Go through 2 arrays of arrays and check that they're the same
 */
 function equal_arrays(A, B) {
+  A = sortArray(A)
+  B = sortArray(B)
   if (A.length !== B.length) {
     return false
   }
@@ -75,68 +80,72 @@ describe('Array Equals Test', () => {
 
 describe('Move Generator Test', () => {
   it('should initialize an empty chess board', () => {
-    const cb = new ChessBoard()
+    const cb = new Board()
     expect(cb.get(rng(0, 8), rng(0, 8))).toEqual(null)
   })
-  it('should verify the moveset of rook', () => {
-    const cb = new ChessBoard()
-    cb.set(4, 4, new ChessPiece('R', true))
+  it('should verify the moveset of a rook', () => {
+    const cb = new Board()
+    cb.set(4, 4, CreateChessPiece('R', true))
+
     const L = cb.generateMoveList([4, 4])
+
     expect(equal_arrays(L, R44)).toEqual(true)
   })
   it('should verify the moveset of bishop', () => {
-    const cb = new ChessBoard()
-    cb.set(4, 4, new ChessPiece('B', true))
+    const cb = new Board()
+    cb.set(4, 4, CreateChessPiece('B', true))
     const L = cb.generateMoveList([4, 4])
+
     expect(equal_arrays(L, B44)).toEqual(true)
   })
   it('should verify the moveset of kNight', () => {
-    const cb = new ChessBoard()
-    cb.set(4, 4, new ChessPiece('N', true))
+    const cb = new Board()
+    cb.set(4, 4, CreateChessPiece('N', true))
     const L = cb.generateMoveList([4, 4])
     expect(equal_arrays(L, N44)).toEqual(true)
   })
   it('should verify the moveset of queen', () => {
-    const cb = new ChessBoard()
-    cb.set(4, 4, new ChessPiece('Q', true))
+    const cb = new Board()
+    cb.set(4, 4, CreateChessPiece('Q', true))
     const L = cb.generateMoveList([4, 4])
     expect(equal_arrays(L, Q44)).toEqual(true)
   })
   it('should verify the moveset of king', () => {
-    const cb = new ChessBoard()
-    cb.set(4, 4, new ChessPiece('K', true))
+    const cb = new Board()
+    cb.set(4, 4, CreateChessPiece('K', true))
     const L = cb.generateMoveList([4, 4])
     expect(equal_arrays(L, K44)).toEqual(true)
   })
   it('should verify the moveset of white pawn', () => {
-    const cb = new ChessBoard()
-    cb.set(4, 4, new ChessPiece('PW', true))
+    const cb = new Board()
+    cb.set(4, 4, CreateChessPiece('PW', true))
     const L = cb.generateMoveList([4, 4])
     expect(equal_arrays(L, PW44)).toEqual(true)
   })
   it('should verify the moveset of black pawn', () => {
-    const cb = new ChessBoard()
-    cb.set(4, 4, new ChessPiece('PB', true))
+    const cb = new Board()
+    cb.set(4, 4, CreateChessPiece('PB', false))
     const L = cb.generateMoveList([4, 4])
     expect(equal_arrays(L, PB44)).toEqual(true)
   })
   it('should verify initial moveset of a white pawn', () => {
-    const cb = new ChessBoard()
+    const cb = new Board()
     cb.setUpDefaultBoard()
     const L = cb.generateMoveList([6, 6]) // should be a white pawn
     expect(equal_arrays(L, [[5, 6], [4, 6]])).toEqual(true)
   })
   it('should verify that a white pawn can attack diagonally', () => {
-    const cb = new ChessBoard()
+    const cb = new Board()
     cb.setUpDefaultBoard()
-    cb.set(5, 4, new ChessPiece('R', false)) // threaten!
+    cb.set(5, 4, CreateChessPiece('R', false)) // threaten!
     const L = cb.generateMoveList([6, 5]) // should be a white pawn
     expect(equal_arrays(L, [[5, 5], [4, 5], [5, 4]])).toEqual(true) // which can't move
   })
-  it('should verify initial moveset of a white queen', () => {
-    const cb = new ChessBoard()
+  it('should verify initial moveset of a white king', () => {
+    const cb = new Board()
     cb.setUpDefaultBoard()
-    const L = cb.generateMoveList([7, 4]) // should be a queen
+    const L = cb.generateMoveList([7, 4]) // should be a king
+
     expect(equal_arrays(L, [])).toEqual(true) // which can't move
   })
 })

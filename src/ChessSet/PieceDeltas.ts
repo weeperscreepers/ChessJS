@@ -1,4 +1,9 @@
 /*
+  Here we define constants that represent how certain
+  pieces can move in a single square
+*/
+
+/*
   Bishops move in diagonals,
   meaning they move in both x and y direction
 */
